@@ -1,0 +1,7 @@
+data
+raw_data
+code/__pycache__
+.DS_Store
+.idea/
+code/data_prep/__pycache__/
+code/save/

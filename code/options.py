@@ -5,9 +5,11 @@ import torch.nn as nn
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--max_epoch', type=int, default=30)
-parser.add_argument('--dataset', default='prep-amazon') # prep-amazon or fdu-mtl
+parser.add_argument('--dataset', default='prep-amazon') # prep-amazon or fdu-mtl or amazon-lang
 parser.add_argument('--prep_amazon_file', default='../data/prep-amazon/amazon.pkl')
 parser.add_argument('--fdu_mtl_dir', default='../data/fdu-mtl/')
+parser.add_argument('--amazon_lang_dir', default='../data/amazon-lang')
+
 # pre-shuffle for cross validation data split
 parser.add_argument('--use_preshuffle/', dest='use_preshuffle', action='store_true', default=True)
 parser.add_argument('--amazon_preshuffle_file', default='../data/prep-amazon/amazon-shuffle-indices.pkl')
@@ -82,8 +84,10 @@ if len(opt.domains) == 0:
         opt.domains = ['books', 'dvd', 'electronics', 'kitchen']
     elif opt.dataset.lower() == 'fdu-mtl':
         opt.domains = ['MR', 'apparel', 'baby', 'books', 'camera_photo', 'dvd', 'electronics', 'health_personal_care', 'imdb', 'kitchen_housewares', 'magazines', 'music', 'software', 'sports_outdoors', 'toys_games', 'video']
+    elif opt.dataset.lower() == 'amazon-lang':
+        opt.domains = ['en', 'fr', 'de']
     else:
-        raise Exception(f'Unknown dataset {opt.dataset}')
+        raise Exception('Unknown dataset {}'.format(opt.dataset))
 opt.all_domains = opt.domains + opt.unlabeled_domains
 if len(opt.dev_domains) == 0:
     opt.dev_domains = opt.all_domains
@@ -95,4 +99,4 @@ if opt.activation.lower() == 'relu':
 elif opt.activation.lower() == 'leaky':
     opt.act_unit = nn.LeakyReLU()
 else:
-    raise Exception(f'Unknown activation function {opt.activation}')
+    raise Exception('Unknown activation function {}'.format(opt.activation))

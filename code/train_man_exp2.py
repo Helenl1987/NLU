@@ -68,7 +68,7 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets):
             elif opt.unlabeled_data == 'train':
                 uset = train_sets[domain]
             else:
-                raise Exception(f'Unknown options for the unlabeled data usage: {opt.unlabeled_data}')
+                raise Exception('Unknown options for the unlabeled data usage: {}'.format(opt.unlabeled_data))
         unlabeled_loaders[domain] = DataLoader(uset,
                 opt.batch_size, shuffle=True)
         unlabeled_iters[domain] = iter(unlabeled_loaders[domain])
@@ -84,7 +84,7 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets):
             F_d[domain] = MlpFeatureExtractor(opt.feature_num, opt.F_hidden_sizes,
                 opt.domain_hidden_size, opt.dropout, opt.F_bn)
     else:
-        raise Exception(f'Unknown model architecture {opt.model}')
+        raise Exception('Unknown model architecture {}'.format(opt.model))
     C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
             opt.shared_hidden_size + opt.domain_hidden_size, opt.num_labels,
             opt.dropout, opt.C_bn)
@@ -99,17 +99,17 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets):
 
     # testing
     if opt.test_only:
-        log.info(f'Loading model from {opt.model_save_file}...')
+        log.info('Loading model from {}...'.format(opt.model_save_file))
         F_s.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                                                    f'netF_s.pth')))
+                                                    'netF_s.pth')))
         for domain in opt.all_domains:
             if domain in F_d:
                 F_d[domain].load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                        f'net_F_d_{domain}.pth')))
+                        'net_F_d_{}.pth'.format(domain))))
         C.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                                                  f'netC.pth')))
+                                                  'netC.pth')))
         D.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-            f'netD.pth')))
+            'netD.pth')))
 
         log.info('Evaluating validation sets:')
         acc = {}
@@ -117,14 +117,14 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets):
             acc[domain] = evaluate(domain, dev_loaders[domain],
                     F_s, F_d[domain] if domain in F_d else None, C)
         avg_acc = sum([acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info(f'Average validation accuracy: {avg_acc}')
+        log.info('Average validation accuracy: {}'.format(avg_acc))
         log.info('Evaluating test sets:')
         test_acc = {}
         for domain in opt.all_domains:
             test_acc[domain] = evaluate(domain, test_loaders[domain],
                     F_s, F_d[domain] if domain in F_d else None, C)
         avg_test_acc = sum([test_acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info(f'Average test accuracy: {avg_test_acc}')
+        log.info('Average test accuracy: {}'.format(avg_test_acc))
         return {'valid': acc, 'test': test_acc}
 
     # training
@@ -240,17 +240,17 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets):
             acc[domain] = evaluate(domain, dev_loaders[domain],
                                    F_s, F_d[domain] if domain in F_d else None, C)
         avg_acc = sum([acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info(f'Average validation accuracy: {avg_acc}')
+        log.info('Average validation accuracy: {}'.format(avg_acc))
         log.info('Evaluating test sets:')
         test_acc = {}
         for domain in opt.dev_domains:
             test_acc[domain] = evaluate(domain, test_loaders[domain],
                     F_s, F_d[domain] if domain in F_d else None, C)
         avg_test_acc = sum([test_acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info(f'Average test accuracy: {avg_test_acc}')
+        log.info('Average test accuracy: {}'.format(avg_test_acc))
 
         if avg_acc > best_avg_acc:
-            log.info(f'New best average validation accuracy: {avg_acc}')
+            log.info('New best average validation accuracy: {}'.format(avg_acc))
             best_acc['valid'] = acc
             best_acc['test'] = test_acc
             best_avg_acc = avg_acc
@@ -268,7 +268,7 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets):
                     '{}/netD.pth'.format(opt.model_save_file))
 
     # end of training
-    log.info(f'Best average validation accuracy: {best_avg_acc}')
+    log.info('Best average validation accuracy: {}'.format(best_avg_acc))
     return best_acc
 
 
@@ -305,13 +305,13 @@ def main():
         os.makedirs(opt.model_save_file)
     datasets = {}
     raw_unlabeled_sets = {}
-    log.info(f'Loading {opt.dataset} Datasets...')
+    log.info('Loading {} Datasets...'.format(opt.dataset))
     for domain in opt.all_domains:
         datasets[domain], raw_unlabeled_sets[domain] = get_msda_amazon_datasets(
                 opt.prep_amazon_file, domain, 1, opt.feature_num)
     opt.num_labels = 2
-    log.info(f'Done Loading {opt.dataset} Datasets.')
-    log.info(f'Domains: {opt.domains}')
+    log.info('Done Loading {} Datasets.'.format(opt.dataset))
+    log.info('Domains: {}'.format('opt.domains'))
 
     train_sets, dev_sets, test_sets, unlabeled_sets = {}, {}, {}, {}
     for domain in opt.domains:
@@ -324,11 +324,11 @@ def main():
         unlabeled_sets[domain] = datasets[domain]
 
     cv = train(train_sets, dev_sets, test_sets, unlabeled_sets)
-    log.info(f'Training done...')
+    log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
-    log.info(f'Validation Set Domain Average\t{acc}')
+    log.info('Validation Set Domain Average\t{}'.format(acc))
     test_acc = sum(cv['test'].values()) / len(cv['test'])
-    log.info(f'Test Set Domain Average\t{test_acc}')
+    log.info('Test Set Domain Average\t{}'.format(test_acc))
     return cv
 
 

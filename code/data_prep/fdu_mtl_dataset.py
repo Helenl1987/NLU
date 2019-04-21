@@ -42,7 +42,7 @@ def read_mtl_file(filename):
         for line in inf.readlines():
             parts = line.split('\t')
             if len(parts) == 3: # labeled
-                Y.append(int(parts[1]))
+                Y.append(int(float(parts[1])))
             elif len(parts) == 2: # unlabeled
                 Y.append(0)
             else:

@@ -61,7 +61,7 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets, fold):
             elif opt.unlabeled_data == 'train':
                 uset = train_sets[domain]
             else:
-                raise Exception(f'Unknown options for the unlabeled data usage: {opt.unlabeled_data}')
+                raise Exception('Unknown options for the unlabeled data usage: {}'.format(opt.unlabeled_data))
         unlabeled_loaders[domain] = DataLoader(uset,
                 opt.batch_size, shuffle=True)
         unlabeled_iters[domain] = iter(unlabeled_loaders[domain])
@@ -77,7 +77,7 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets, fold):
             F_d[domain] = MlpFeatureExtractor(opt.feature_num, opt.F_hidden_sizes,
                 opt.domain_hidden_size, opt.dropout, opt.F_bn)
     else:
-        raise Exception(f'Unknown model architecture {opt.model}')
+        raise Exception('Unknown model architecture {}'.format(opt.model))
     C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
             opt.shared_hidden_size + opt.domain_hidden_size, opt.num_labels,
             opt.dropout, opt.C_bn)
@@ -93,17 +93,17 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets, fold):
 
     # testing
     if opt.test_only:
-        log.info(f'Loading model from {opt.model_save_file}...')
+        log.info('Loading model from {}...'.format(opt.model_save_file))
         F_s.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                                                    f'netF_s_fold{fold}.pth')))
+                                                    'netF_s_fold{}.pth'.format(fold))))
         for domain in opt.all_domains:
             if domain in F_d:
                 F_d[domain].load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                        f'net_F_d_{domain}_fold{fold}.pth')))
+                        'net_F_d_{}_fold{}.pth'.format(domain, fold))))
         C.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                                                  f'netC_fold{fold}.pth')))
+                                                  'netC_fold{}.pth'.format(fold))))
         D.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                                                  f'netD_fold{fold}.pth')))
+                                                  'netD_fold{}.pth'.format(fold))))
 
         log.info('Evaluating validation sets:')
         acc = {}
@@ -111,14 +111,14 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets, fold):
             acc[domain] = evaluate(domain, dev_loaders[domain],
                                    F_s, F_d[domain] if domain in F_d else None, C)
         avg_acc = sum([acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info(f'Average validation accuracy: {avg_acc}')
+        log.info('Average validation accuracy: {}'.format(avg_acc))
         log.info('Evaluating test sets:')
         test_acc = {}
         for domain in opt.all_domains:
             test_acc[domain] = evaluate(domain, test_loaders[domain],
                     F_s, F_d[domain] if domain in F_d else None, C)
         avg_test_acc = sum([test_acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info(f'Average test accuracy: {avg_test_acc}')
+        log.info('Average test accuracy: {}'.format(avg_test_acc))
         return {'valid': acc, 'test': test_acc}
 
     # training
@@ -210,7 +210,7 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets, fold):
                 if opt.loss.lower() == 'gr':
                     d_targets = utils.get_domain_label(opt.loss, domain, len(d_inputs))
                     l_d = functional.nll_loss(d_outputs, d_targets)
-                    log.debug(f'D loss: {l_d.item()}')
+                    log.debug('D loss: {}'.format(l_d.item()))
                     if opt.lambd > 0:
                         l_d *= -opt.lambd
                 elif opt.loss.lower() == 'bs':
@@ -225,7 +225,7 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets, fold):
                         l_d *= opt.lambd
                 l_d.backward()
                 if opt.model.lower() != 'lstm':
-                    log.debug(f'F_s norm: {F_s.net[-2].weight.grad.data.norm()}')
+                    log.debug('F_s norm: {}'.format(F_s.net[-2].weight.grad.data.norm()))
 
             optimizer.step()
 
@@ -242,17 +242,17 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets, fold):
             acc[domain] = evaluate(domain, dev_loaders[domain],
                                    F_s, F_d[domain] if domain in F_d else None, C)
         avg_acc = sum([acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info(f'Average validation accuracy: {avg_acc}')
+        log.info('Average validation accuracy: {}'.format(avg_acc))
         log.info('Evaluating test sets:')
         test_acc = {}
         for domain in opt.all_domains:
             test_acc[domain] = evaluate(domain, test_loaders[domain],
                     F_s, F_d[domain] if domain in F_d else None, C)
         avg_test_acc = sum([test_acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info(f'Average test accuracy: {avg_test_acc}')
+        log.info('Average test accuracy: {}'.format(avg_test_acc))
 
         if avg_acc > best_avg_acc:
-            log.info(f'New best average validation accuracy: {avg_acc}')
+            log.info('New best average validation accuracy: {}'.format(avg_acc))
             best_acc['valid'] = acc
             best_acc['test'] = test_acc
             best_avg_acc = avg_acc
@@ -270,7 +270,7 @@ def train(train_sets, dev_sets, test_sets, unlabeled_sets, fold):
                     '{}/netD_fold{}.pth'.format(opt.model_save_file, fold))
 
     # end of training
-    log.info(f'Best average validation accuracy: {best_avg_acc}')
+    log.info('Best average validation accuracy: {}'.format(best_avg_acc))
     return best_acc
 
 
@@ -305,18 +305,18 @@ def evaluate(name, loader, F_s, F_d, C):
 def cross_validation(kfold):
     datasets = {}
     unlabeled_sets = {}
-    log.info(f'Loading {opt.dataset} Datasets...')
+    log.info('Loading {} Datasets...'.format(opt.dataset))
     for domain in opt.domains + opt.unlabeled_domains:
         datasets[domain], unlabeled_sets[domain] = get_msda_amazon_datasets(
                 opt.prep_amazon_file, domain, kfold, opt.feature_num)
     opt.num_labels = 2
-    log.info(f'Done Loading {opt.dataset} Datasets.')
-    log.info(f'Domains: {opt.domains}')
+    log.info('Done Loading {} Datasets.'.format(opt.dataset))
+    log.info('Domains: {}'.format(opt.domains))
 
     cv = {}
-    log.info(f'Starting {kfold}-fold Cross Validation...')
+    log.info('Starting {}-fold Cross Validation...'.format(kfold))
     for fold in range(kfold):
-        log.info(f'Starting fold {fold}...')
+        log.info('Starting fold {}...'.format(fold))
         train_sets, dev_sets, test_sets = {}, {}, {}
         for domain in opt.all_domains:
             lset = datasets[domain]
@@ -326,24 +326,24 @@ def cross_validation(kfold):
             dev_sets[domain] = lset.get_devset(fold)
             test_sets[domain] = lset.get_testset(fold)
         cv[fold] = train(train_sets, dev_sets, test_sets, unlabeled_sets, fold)
-        log.info(f'Ending fold {fold}...')
+        log.info('Ending fold {}...'.format(fold))
         acc = sum(cv[fold]['valid'].values()) / len(cv[fold]['valid'])
-        log.info(f'Validation Set Domain Average\t{acc}')
+        log.info('Validation Set Domain Average\t{}'.format(acc))
         test_acc = sum(cv[fold]['test'].values()) / len(cv[fold]['test'])
-        log.info(f'Test Set Domain Average\t{test_acc}')
+        log.info('Test Set Domain Average\t{}'.format(test_acc))
 
     avg_acc = utils.average_cv_accuracy(cv)
     avg_acc, avg_acc_test = avg_acc['valid'], avg_acc['test']
-    log.info(f'{kfold}-Fold Cross Validation Accuracies:')
+    log.info('{}-Fold Cross Validation Accuracies:'.format(kfold))
     for domain in opt.all_domains:
-        log.info(f'{domain}\t{avg_acc[domain]}')
+        log.info('{}\t{}'.format(domain, avg_acc[domain]))
     overall = sum(avg_acc.values()) / len(avg_acc)
-    log.info(f'Overall Validation Set Average\t{overall}')
-    log.info(f'{kfold}-Fold Cross Validation Accuracies on Test Set:')
+    log.info('Overall Validation Set Average\t{}'.format(overall))
+    log.info('{}-Fold Cross Validation Accuracies on Test Set:'.format(kfold))
     for domain in opt.all_domains:
-        log.info(f'{domain}\t{avg_acc_test[domain]}')
+        log.info('{}\t{}'.format(domain, avg_acc_test[domain]))
     overall_test = sum(avg_acc_test.values()) / len(avg_acc_test)
-    log.info(f'Overall Test Set Average\t{overall_test}')
+    log.info('Overall Test Set Average\t{}'.format(overall_test))
     return overall
     
 

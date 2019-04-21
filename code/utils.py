@@ -49,7 +49,7 @@ def pad(x, y, eos_idx, sort):
     padded_x = np.zeros((len(x), max_len), dtype=np.int)
     padded_x.fill(eos_idx)
     for i, row in enumerate(x):
-        assert eos_idx not in row, f'EOS in sequence {row}'
+        assert eos_idx not in row, 'EOS in sequence {}'.format(row)
         padded_x[i][:len(row)] = row
     padded_x, lengths = torch.LongTensor(padded_x), torch.LongTensor(lengths)
     y = torch.LongTensor(y).view(-1)
