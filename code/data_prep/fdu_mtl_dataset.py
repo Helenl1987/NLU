@@ -66,14 +66,14 @@ def get_fdu_mtl_datasets(vocab, data_dir, domain, max_seq_len):
     dev_set = FduMtlDataset(dev_X, dev_Y, max_seq_len)
     test_set = FduMtlDataset(test_X, test_Y, max_seq_len)
     # pre-compute embedding indices
-    vocab.prepare_inputs(train_set)
-    vocab.prepare_inputs(dev_set)
-    vocab.prepare_inputs(test_set)
+    vocab.prepare_inputs(train_set, domain)
+    vocab.prepare_inputs(dev_set, domain)
+    vocab.prepare_inputs(test_set, domain)
 
 
     # unlabeled set
     unlabeled_X, unlabeled_Y = read_mtl_file(os.path.join(data_dir, '{}_dvd_unlabel'.format(domain)))
     unlabeled_set = FduMtlDataset(unlabeled_X, unlabeled_Y, max_seq_len)
-    vocab.prepare_inputs(unlabeled_set)
+    vocab.prepare_inputs(unlabeled_set, domain)
 
     return train_set, dev_set, test_set, unlabeled_set
