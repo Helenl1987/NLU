@@ -31,6 +31,9 @@ class FduMtlDataset(Dataset):
             self.max_seq_len = max([len(x) for x in self.X])
         return self.max_seq_len
 
+def clean_sentence(sent):
+    sent = sent.replace('<br />', ' ').replace('\\', '').replace('&quot', ' ')
+    return sent
 
 def read_mtl_file(filename):
     X = []
@@ -38,37 +41,38 @@ def read_mtl_file(filename):
     with open(filename, 'r', encoding='ISO-8859-2') as inf:
         for line in inf.readlines():
             parts = line.split('\t')
-            if len(parts) == 2: # labeled
-                Y.append(int(parts[0]))
-            elif len(parts) == 1: # unlabeled
+            if len(parts) == 3: # labeled
+                Y.append(int(parts[1]))
+            elif len(parts) == 2: # unlabeled
                 Y.append(0)
             else:
                 raise Exception('Unknown format')
-            words = parts[-1].split(' ')
+            clean = clean_sentence(parts[-1])
+            words = clean.split(' ')
             X.append({'tokens': words})
     Y = torch.LongTensor(Y).to(opt.device)
     return (X, Y)
 
 
 def get_fdu_mtl_datasets(vocab, data_dir, domain, max_seq_len):
-    print(f'Loading FDU MTL data for {domain} Domain')
+    print('Loading FDU MTL data for {} Domain'.format(domain))
     # train and dev set
-    train_X, train_Y = read_mtl_file(os.path.join(data_dir, f'{domain}.task.train'))
-    dev_X, dev_Y = train_X[-200:], train_Y[-200:]
-    train_X, train_Y = train_X[:-200], train_Y[:-200]
+    train_X, train_Y = read_mtl_file(os.path.join(data_dir, '{}_dvd'.format(domain)))
+    unit = len(train_X) // 10
+    dev_X, dev_Y = train_X[-unit:], train_Y[-unit:]
+    test_X, test_Y = train_X[-2*unit:-unit], train_Y[-2*unit:-unit]
+    train_X, train_Y = train_X[:-2*unit], train_Y[:-2*unit]
     train_set = FduMtlDataset(train_X, train_Y, max_seq_len)
     dev_set = FduMtlDataset(dev_X, dev_Y, max_seq_len)
+    test_set = FduMtlDataset(test_X, test_Y, max_seq_len)
     # pre-compute embedding indices
     vocab.prepare_inputs(train_set)
     vocab.prepare_inputs(dev_set)
-
-    # test set
-    test_X, test_Y = read_mtl_file(os.path.join(data_dir, f'{domain}.task.test'))
-    test_set = FduMtlDataset(test_X, test_Y, max_seq_len)
     vocab.prepare_inputs(test_set)
 
+
     # unlabeled set
-    unlabeled_X, unlabeled_Y = read_mtl_file(os.path.join(data_dir, f'{domain}.task.unlabel'))
+    unlabeled_X, unlabeled_Y = read_mtl_file(os.path.join(data_dir, '{}_dvd_unlabel'.format(domain)))
     unlabeled_set = FduMtlDataset(unlabeled_X, unlabeled_Y, max_seq_len)
     vocab.prepare_inputs(unlabeled_set)
 
