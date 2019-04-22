@@ -30,7 +30,9 @@ from vocab import Vocab
 # save models and logging
 if not os.path.exists(opt.model_save_file):
     os.makedirs(opt.model_save_file)
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG if opt.debug else logging.INFO)
+logging.basicConfig(filename='my.log',
+#  stream=sys.stderr, 
+ level=logging.DEBUG if opt.debug else logging.INFO)
 log = logging.getLogger(__name__)
 fh = logging.FileHandler(os.path.join(opt.model_save_file, 'log.txt'))
 log.addHandler(fh)

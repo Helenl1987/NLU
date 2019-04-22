@@ -84,15 +84,15 @@ class Vocab:
 
 
 # def main():
-#     emb_filename = '../data/MWE/'
-#     vocab = Vocab(emb_filename)
-#     print(len(vocab.embeddings))
+#     # emb_filename = '../data/MWE/'
+#     # vocab = Vocab(emb_filename)
+#     # print(len(vocab.embeddings))
 #     # exm_idx = vocab.lookup('the', 'en')
 #     # print(exm_idx, vocab.embeddings[exm_idx])
-#     exm_idx = vocab.lookup('la', 'de')
-#     print(exm_idx, vocab.embeddings[exm_idx])
-#     exm_idx = vocab.lookup('jpg', 'fr')
-#     print(exm_idx, vocab.embeddings[exm_idx])
+#     # exm_idx = vocab.lookup('la', 'de')
+#     # print(exm_idx, vocab.embeddings[exm_idx])
+#     # exm_idx = vocab.lookup('jpg', 'fr')
+#     # print(exm_idx, vocab.embeddings[exm_idx])
 #     # exm_idx = vocab.unk_idx
 #     # print(exm_idx, vocab.embeddings[exm_idx])
 
