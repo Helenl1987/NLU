@@ -95,11 +95,15 @@ def read_mtl_file(domain, filename):
 def get_fdu_mtl_datasets(vocab, data_dir, domain, max_seq_len):
     print('Loading FDU MTL data for {} Domain'.format(domain))
     # train and dev set
+<<<<<<< HEAD
     train_X, train_Y = read_mtl_file(domain, os.path.join(data_dir, '{}_book'.format(domain)))
+=======
+    train_X, train_Y = read_mtl_file(os.path.join(data_dir, '{}_book'.format(domain)))
+>>>>>>> d4c3c0b66cf6d07681aec5cff165820393f258f6
     unit = len(train_X) // 10
     dev_X, dev_Y = train_X[-unit:], train_Y[-unit:]
-    test_X, test_Y = train_X[-2*unit:-unit], train_Y[-2*unit:-unit]
-    train_X, train_Y = train_X[:-2*unit], train_Y[:-2*unit]
+    test_X, test_Y = train_X[-3*unit:-unit], train_Y[-3*unit:-unit]
+    train_X, train_Y = train_X[:-3*unit], train_Y[:-3*unit]
     train_set = FduMtlDataset(train_X, train_Y, max_seq_len)
     dev_set = FduMtlDataset(dev_X, dev_Y, max_seq_len)
     test_set = FduMtlDataset(test_X, test_Y, max_seq_len)
@@ -110,7 +114,11 @@ def get_fdu_mtl_datasets(vocab, data_dir, domain, max_seq_len):
 
 
     # unlabeled set
+<<<<<<< HEAD
     unlabeled_X, unlabeled_Y = read_mtl_file(domain, os.path.join(data_dir, '{}_book_unlabel'.format(domain)))
+=======
+    unlabeled_X, unlabeled_Y = read_mtl_file(os.path.join(data_dir, '{}_book_unlabel'.format(domain)))
+>>>>>>> d4c3c0b66cf6d07681aec5cff165820393f258f6
     unlabeled_set = FduMtlDataset(unlabeled_X, unlabeled_Y, max_seq_len)
     vocab.prepare_inputs(unlabeled_set, domain)
 
