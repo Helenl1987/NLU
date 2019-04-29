@@ -330,7 +330,7 @@ def main():
     log.info('Domains: {}'.format(opt.domains))
 
     train_sets, dev_sets, test_sets, unlabeled_sets = {}, {}, {}, {}
-    for domain in opt.domains:
+    for domain in opt.all_domains:
         train_sets[domain], dev_sets[domain], test_sets[domain], unlabeled_sets[domain] = \
                 get_fdu_mtl_datasets(vocab, opt.amazon_lang_dir, domain, opt.max_seq_len)
     opt.num_labels = FduMtlDataset.num_labels

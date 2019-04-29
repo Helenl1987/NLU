@@ -61,13 +61,13 @@ def clean_sentence(sent):
 def read_mtl_file(domain, filename):
     X = []
     Y = []
-    if domain is 'en':
+    if domain == 'en':
         # tokenizer = WordPunctTokenizer()
         tokenizer = English().Defaults.create_tokenizer()
-    elif domain is 'fr':
+    elif domain == 'fr':
         # tokenizer = nltk.data.load('tokenizers/punkt/french.pickle')
         tokenizer = French().Defaults.create_tokenizer()
-    elif domain is 'de':
+    elif domain == 'de':
         # tokenizer = nltk.data.load('tokenizers/punkt/german.pickle')
         tokenizer = German().Defaults.create_tokenizer()
     with open(filename, 'r', encoding='utf-8') as inf:
