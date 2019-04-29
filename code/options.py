@@ -27,7 +27,6 @@ parser.add_argument('--max_seq_len', type=int, default=0) # set to <=0 to not tr
 parser.add_argument('--unlabeled_data', type=str, default='both')
 parser.add_argument('--random_seed', type=int, default=1)
 parser.add_argument('--model_save_file', default='./save/man')
-parser.add_argument('--topic_domain', default='music')
 parser.add_argument('--test_only', dest='test_only', action='store_true')
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--learning_rate', type=float, default=0.0001)

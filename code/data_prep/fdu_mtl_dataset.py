@@ -95,7 +95,7 @@ def read_mtl_file(domain, filename):
 def get_fdu_mtl_datasets(vocab, data_dir, domain, max_seq_len):
     print('Loading FDU MTL data for {} Domain'.format(domain))
     # train and dev set
-    train_X, train_Y = read_mtl_file(domain, os.path.join(data_dir, '{}_book'.format(domain)))
+    train_X, train_Y = read_mtl_file(domain, os.path.join(data_dir, '{}_{}'.format(domain, opt.topic_domain)))
 
     unit = len(train_X) // 10
     dev_X, dev_Y = train_X[-unit:], train_Y[-unit:]
