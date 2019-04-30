@@ -247,17 +247,17 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
                 shared_feat = F_s(d_inputs)
                 d_outputs = D(shared_feat)
                 if opt.loss.lower() == 'gr':
-                    d_targets = utils.get_domain_label(opt.loss, domain, len(d_inputs[1]))
+                    d_targets = utils.get_domain_label(opt.loss, domain, len(d_inputs))
                     l_d = functional.nll_loss(d_outputs, d_targets)
                     if opt.lambd > 0:
                         l_d *= -opt.lambd
                 elif opt.loss.lower() == 'bs':
-                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs[1]))
+                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs))
                     l_d = functional.kl_div(d_outputs, d_targets, size_average=False)
                     if opt.lambd > 0:
                         l_d *= opt.lambd
                 elif opt.loss.lower() == 'l2':
-                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs[1]))
+                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs))
                     l_d = functional.mse_loss(d_outputs, d_targets)
                     if opt.lambd > 0:
                         l_d *= opt.lambd
