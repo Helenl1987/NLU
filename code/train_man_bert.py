@@ -205,8 +205,8 @@ def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlab
     return best_acc
 
 
-def train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders):
-    F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
+def train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders, F_s):
+
     C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
                             opt.shared_hidden_size + opt.domain_hidden_size, opt.num_labels,
                             opt.dropout, opt.C_bn)
@@ -602,9 +602,8 @@ def main():
         unlabeled_loaders[domain] = DataLoader(uset, sampler=uset_sampler, batch_size=opt.batch_size)
         unlabeled_iters[domain] = iter(unlabeled_loaders[domain])
 
-
-
-    cv = train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders)
+    F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
+    cv = train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders, F_s)
     log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
     log.info('Validation Set Domain Average\t{}'.format(acc))
