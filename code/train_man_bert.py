@@ -42,7 +42,7 @@ log.addHandler(fh)
 log.info(opt)
 
 def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders):
-    F_s = BertModel('bert-base-multilingual-cased')
+    F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
     C, D = None, None
 
     C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
@@ -206,7 +206,7 @@ def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlab
 
 
 def train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders):
-    F_s = BertModel('bert-base-multilingual-cased')
+    F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
     C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
                             opt.shared_hidden_size + opt.domain_hidden_size, opt.num_labels,
                             opt.dropout, opt.C_bn)
@@ -299,7 +299,7 @@ def train(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters,
     For unlabeled domains, no train_sets are available
     """
     # models
-    F_s = BertModel('bert-base-multilingual-cased')
+    F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
     F_d = {}
     C, D = None, None
     if opt.model.lower() == 'dan':
