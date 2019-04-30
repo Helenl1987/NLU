@@ -98,6 +98,12 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
         for domain in opt.domains:
             F_d[domain] = CNNFeatureExtractor(vocab, opt.F_layers, opt.domain_hidden_size,
                                               opt.kernel_num, opt.kernel_sizes, opt.dropout)
+    elif opt.model.lower() == 'mlp':
+        F_s = MlpFeatureExtractor(vocab, opt.F_layers, opt.shared_hidden_size,
+                                  opt.kernel_num, opt.kernel_sizes, opt.dropout)
+        for domain in opt.domains:
+            F_d[domain] = MlpFeatureExtractor(vocab, opt.F_layers, opt.domain_hidden_size,
+                                              opt.kernel_num, opt.kernel_sizes, opt.dropout)
     else:
         raise Exception('Unknown model architecture {}'.format(opt.model))
 

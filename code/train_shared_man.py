@@ -89,6 +89,9 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
     elif opt.model.lower() == 'cnn':
         F_s = CNNFeatureExtractor(vocab, opt.F_layers, opt.shared_hidden_size,
                                   opt.kernel_num, opt.kernel_sizes, opt.dropout)
+    elif opt.model.lower() == 'mlp':
+        F_s = MlpFeatureExtractor(vocab, opt.F_layers, opt.shared_hidden_size,
+                                  opt.kernel_num, opt.kernel_sizes, opt.dropout)
     else:
         raise Exception('Unknown model architecture {}'.format(opt.model))
 
