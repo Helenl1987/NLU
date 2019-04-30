@@ -556,6 +556,8 @@ def main():
     if not os.path.exists(opt.model_save_file):
         os.makedirs(opt.model_save_file)
     vocab = Vocab(opt.emb_filename)
+    log.info('Loadin pretrained bert model...') 
+    F_s = BertModel.from_pretrained('bert-base-multilingual-cased', cache_dir='/scratch/zl2521/pretrained-bert-cache')
     log.info('Loading {} Datasets...'.format(opt.dataset))
     log.info('Domains: {}'.format(opt.domains))
 
@@ -602,7 +604,6 @@ def main():
         unlabeled_loaders[domain] = DataLoader(uset, sampler=uset_sampler, batch_size=opt.batch_size)
         unlabeled_iters[domain] = iter(unlabeled_loaders[domain])
 
-    F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
     cv = train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders, F_s)
     log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
