@@ -190,12 +190,12 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
                             unlabeled_loaders, unlabeled_iters, domain)
                     batch = tuple(t.to(opt.device) for t in batch)
                     emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
-                    d_targets = utils.get_domain_label(opt.loss, domain, len(emb_ids[1]))
+                    d_targets = utils.get_domain_label(opt.loss, domain, len(emb_ids))
                     shared_feat = F_s(emb_ids)
                     d_outputs = D(shared_feat)
                     # D accuracy
                     _, pred = torch.max(d_outputs, 1)
-                    d_total += len(emb_ids[1])
+                    d_total += len(emb_ids)
                     if opt.loss.lower() == 'l2':
                         _, tgt_indices = torch.max(d_targets, 1)
                         d_correct += (pred==tgt_indices).sum().item()
