@@ -32,7 +32,7 @@ class SummingLayer(nn.Module):
         """
         input: (data, lengths): (IntTensor(batch_size, max_sent_len), IntTensor(batch_size))
         """
-        data, _ = input
+        data = input
         data = autograd.Variable(data)
         embeds = self.word_emb(data)
         X = embeds.sum(1).squeeze()
