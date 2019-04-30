@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as functional
 import torch.optim as optim
-from torch.utils.data import ConcatDataset, DataLoader
+from torch.utils.data import ConcatDataset, DataLoader, RandomSampler
 from torchnet.meter import ConfusionMeter
 
 from options import opt
@@ -46,19 +46,26 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
     For unlabeled domains, no train_sets are available
     """
     # dataset loaders
+    train_sampler, test_sampler, dev_sampler = {}, {}, {}
     train_loaders, unlabeled_loaders = {}, {}
     train_iters, unlabeled_iters = {}, {}
     dev_loaders, test_loaders = {}, {}
     my_collate = utils.sorted_collate if opt.model=='lstm' else utils.unsorted_collate
     for domain in opt.domains:
-        train_loaders[domain] = DataLoader(train_sets[domain],
-                opt.batch_size, shuffle=True, collate_fn = my_collate)
+
+        #train_loaders[domain] = DataLoader(train_sets[domain],opt.batch_size, shuffle=True, collate_fn = my_collate)
+        train_sampler[domain] = RandomSampler(train_sets[domain])
+        train_loaders[domain] = DataLoader(train_sets[domain], sampler=train_sampler[domain], batch_size=opt.batch_size)
         train_iters[domain] = iter(train_loaders[domain])
+
     for domain in opt.dev_domains:
-        dev_loaders[domain] = DataLoader(dev_sets[domain],
-                opt.batch_size, shuffle=False, collate_fn = my_collate)
-        test_loaders[domain] = DataLoader(test_sets[domain],
-                opt.batch_size, shuffle=False, collate_fn = my_collate)
+        test_sampler[domain] = RandomSampler(test_sets[domain])
+        test_loaders[domain] = DataLoader(test_sets[domain], sampler=test_sampler[domain], batch_size=opt.batch_size)
+        dev_sampler[domain] = RandomSampler(dev_sets[domain])
+        dev_loaders[domain] = DataLoader(dev_sets[domain], sampler=dev_sampler[domain], batch_size=opt.batch_size)
+        #dev_loaders[domain] = DataLoader(dev_sets[domain],opt.batch_size, shuffle=False, collate_fn = my_collate)
+        #test_loaders[domain] = DataLoader(test_sets[domain],opt.batch_size, shuffle=False, collate_fn = my_collate)
+
     for domain in opt.all_domains:
         if domain in opt.unlabeled_domains:
             uset = unlabeled_sets[domain]
@@ -72,8 +79,9 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
                 uset = train_sets[domain]
             else:
                 raise Exception('Unknown options for the unlabeled data usage: {}'.format(opt.unlabeled_data))
-        unlabeled_loaders[domain] = DataLoader(uset,
-                opt.batch_size, shuffle=True, collate_fn = my_collate)
+        #unlabeled_loaders[domain] = DataLoader(uset,opt.batch_size, shuffle=True, collate_fn = my_collate)
+        uset_sampler = RandomSampler(uset)
+        unlabeled_loaders[domain] = DataLoader(uset, sampler=uset_sampler, batch_size=opt.batch_size)
         unlabeled_iters[domain] = iter(unlabeled_loaders[domain])
 
     # models
@@ -97,12 +105,6 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
                                   opt.kernel_num, opt.kernel_sizes, opt.dropout)
         for domain in opt.domains:
             F_d[domain] = CNNFeatureExtractor(vocab, opt.F_layers, opt.domain_hidden_size,
-                                              opt.kernel_num, opt.kernel_sizes, opt.dropout)
-    elif opt.model.lower() == 'mlp':
-        F_s = MlpFeatureExtractor(vocab, opt.F_layers, opt.shared_hidden_size,
-                                  opt.kernel_num, opt.kernel_sizes, opt.dropout)
-        for domain in opt.domains:
-            F_d[domain] = MlpFeatureExtractor(vocab, opt.F_layers, opt.domain_hidden_size,
                                               opt.kernel_num, opt.kernel_sizes, opt.dropout)
     else:
         raise Exception('Unknown model architecture {}'.format(opt.model))
@@ -184,14 +186,16 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
                 # train on both labeled and unlabeled domains
                 for domain in opt.all_domains:
                     # targets not used
-                    d_inputs, _ = utils.endless_get_next_batch(
+                    batch = utils.endless_get_next_batch(
                             unlabeled_loaders, unlabeled_iters, domain)
-                    d_targets = utils.get_domain_label(opt.loss, domain, len(d_inputs[1]))
-                    shared_feat = F_s(d_inputs)
+                    batch = tuple(t.to(opt.device) for t in batch)
+                    emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
+                    d_targets = utils.get_domain_label(opt.loss, domain, len(emb_ids[1]))
+                    shared_feat = F_s(emb_ids)
                     d_outputs = D(shared_feat)
                     # D accuracy
                     _, pred = torch.max(d_outputs, 1)
-                    d_total += len(d_inputs[1])
+                    d_total += len(emb_ids[1])
                     if opt.loss.lower() == 'l2':
                         _, tgt_indices = torch.max(d_targets, 1)
                         d_correct += (pred==tgt_indices).sum().item()
@@ -218,9 +222,12 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
                 f_d.zero_grad()
             C.zero_grad()
             for domain in opt.domains:
-                inputs, targets = utils.endless_get_next_batch(
+                batch = utils.endless_get_next_batch(
                         train_loaders, train_iters, domain)
-                targets = targets.to(opt.device)
+                batch = tuple(t.to(opt.device) for t in batch)
+                emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
+                inputs = emb_ids
+                targets = label_ids
                 shared_feat = F_s(inputs)
                 domain_feat = F_d[domain](inputs)
                 features = torch.cat((shared_feat, domain_feat), dim=1)
@@ -232,8 +239,11 @@ def train(vocab, train_sets, dev_sets, test_sets, unlabeled_sets):
                 correct[domain] += (pred == targets).sum().item()
             # update F with D gradients on all domains
             for domain in opt.all_domains:
-                d_inputs, _ = utils.endless_get_next_batch(
+                batch = utils.endless_get_next_batch(
                         unlabeled_loaders, unlabeled_iters, domain)
+                batch = tuple(t.to(opt.device) for t in batch)
+                emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
+                d_inputs = emb_ids
                 shared_feat = F_s(d_inputs)
                 d_outputs = D(shared_feat)
                 if opt.loss.lower() == 'gr':
@@ -309,7 +319,11 @@ def evaluate(name, loader, F_s, F_d, C):
     correct = 0
     total = 0
     confusion = ConfusionMeter(opt.num_labels)
-    for inputs, targets in tqdm(it):
+    for batch in tqdm(it):
+        batch = tuple(t.to(opt.device) for t in batch)
+        emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
+        inputs = emb_ids
+        targets = label_ids
         targets = targets.to(opt.device)
         if not F_d:
             # unlabeled domain

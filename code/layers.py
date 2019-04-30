@@ -1,7 +1,7 @@
 import torch
 from torch import autograd, nn
 import torch.nn.functional as functional
-
+import options as opt
 import utils
 
 class AveragingLayer(nn.Module):
@@ -13,7 +13,8 @@ class AveragingLayer(nn.Module):
         """
         input: (data, lengths): (IntTensor(batch_size, max_sent_len), IntTensor(batch_size))
         """
-        data, lengths = input
+        data = input
+        lengths = torch.tensor([opt.max_seq_len]*opt.batch_size).to(opt.device)
         data = autograd.Variable(data)
         lengths = autograd.Variable(lengths)
         embeds = self.word_emb(data)

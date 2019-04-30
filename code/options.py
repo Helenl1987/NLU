@@ -22,7 +22,7 @@ parser.add_argument('--dev_domains', type=str, nargs='+', default=[])
 parser.add_argument('--topic_domain', type=str, default='dvd')
 parser.add_argument('--emb_filename', default='../data/MWE/')
 parser.add_argument('--kfold', type=int, default=5) # cross-validation (n>=3)
-parser.add_argument('--max_seq_len', type=int, default=0) # set to <=0 to not truncate
+parser.add_argument('--max_seq_len', type=int, default=128) # set to <=0 to not truncate
 # which data to be used as unlabeled data: train, unlabeled, or both
 parser.add_argument('--unlabeled_data', type=str, default='both')
 parser.add_argument('--random_seed', type=int, default=1)

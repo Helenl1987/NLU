@@ -79,7 +79,7 @@ class Vocab:
         return self.unk_idx
 
     def prepare_inputs(self, dataset, language):
-        for x in dataset.X:
+        for x in dataset:
             x['inputs'] = [self.lookup(w, language) for w in x['tokens']]
 
 

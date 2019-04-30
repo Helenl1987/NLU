@@ -124,15 +124,15 @@ def average_cv_accuracy(cv):
 
 def endless_get_next_batch(loaders, iters, domain):
     try:
-        inputs, targets = next(iters[domain])
+        batch = next(iters[domain])
     except StopIteration:
         iters[domain] = iter(loaders[domain])
-        inputs, targets = next(iters[domain])
+        batch = next(iters[domain])
     # In PyTorch 0.3, Batch Norm no longer works for size 1 batch,
     # so we will skip leftover batch of size < batch_size
-    if len(targets) < opt.batch_size:
+    if len(batch[1]) < opt.batch_size:
         return endless_get_next_batch(loaders, iters, domain)
-    return (inputs, targets)
+    return batch
 
 
 domain_labels = {}
