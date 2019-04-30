@@ -540,7 +540,8 @@ def evaluate(name, loader, F_s, F_d, C):
             d_features = torch.zeros(len(targets), opt.domain_hidden_size).to(opt.device)
         else:
             d_features = F_d(inputs)
-        features = torch.cat((F_s(input_ids, input_mask, segment_ids), d_features), dim=1)
+        _, shared_feat = F_s(input_ids, input_mask, segment_ids)
+        features = torch.cat((shared_feat, d_features), dim=1)
         outputs = C(features)
         _, pred = torch.max(outputs, 1)
         confusion.add(pred.data, targets.data)
