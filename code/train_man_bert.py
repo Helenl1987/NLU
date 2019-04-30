@@ -73,7 +73,7 @@ def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlab
         acc = {}
         for domain in opt.all_domains:
             acc[domain] = evaluate(domain, dev_loaders[domain],
-                                   F_s, F_d[domain] if domain in F_d else None, C)
+                                   F_s, None, C)
         avg_acc = sum([acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
         log.info('Average validation accuracy: {}'.format(avg_acc))
         log.info('Evaluating test sets:')
@@ -119,12 +119,12 @@ def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlab
                         unlabeled_loaders, unlabeled_iters, domain)
                     batch = tuple(t.to(opt.device) for t in batch)
                     emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
-                    d_targets = utils.get_domain_label(opt.loss, domain, len(emb_ids[1]))
+                    d_targets = utils.get_domain_label(opt.loss, domain, len(emb_ids))
                     _, shared_feat = F_s(input_ids, input_mask, segment_ids)
                     d_outputs = D(shared_feat)
                     # D accuracy
                     _, pred = torch.max(d_outputs, 1)
-                    d_total += len(emb_ids[1])
+                    d_total += len(emb_ids)
                     if opt.loss.lower() == 'l2':
                         _, tgt_indices = torch.max(d_targets, 1)
                         d_correct += (pred == tgt_indices).sum().item()
@@ -169,17 +169,17 @@ def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlab
                 _, shared_feat = F_s(input_ids, input_mask, segment_ids)
                 d_outputs = D(shared_feat)
                 if opt.loss.lower() == 'gr':
-                    d_targets = utils.get_domain_label(opt.loss, domain, len(d_inputs[1]))
+                    d_targets = utils.get_domain_label(opt.loss, domain, len(d_inputs))
                     l_d = functional.nll_loss(d_outputs, d_targets)
                     if opt.lambd > 0:
                         l_d *= -opt.lambd
                 elif opt.loss.lower() == 'bs':
-                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs[1]))
+                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs))
                     l_d = functional.kl_div(d_outputs, d_targets, size_average=False)
                     if opt.lambd > 0:
                         l_d *= opt.lambd
                 elif opt.loss.lower() == 'l2':
-                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs[1]))
+                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs))
                     l_d = functional.mse_loss(d_outputs, d_targets)
                     if opt.lambd > 0:
                         l_d *= opt.lambd
@@ -427,12 +427,12 @@ def train(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters,
                         unlabeled_loaders, unlabeled_iters, domain)
                     batch = tuple(t.to(opt.device) for t in batch)
                     emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
-                    d_targets = utils.get_domain_label(opt.loss, domain, len(emb_ids[1]))
+                    d_targets = utils.get_domain_label(opt.loss, domain, len(emb_ids))
                     _, shared_feat = F_s(input_ids, input_mask, segment_ids)
                     d_outputs = D(shared_feat)
                     # D accuracy
                     _, pred = torch.max(d_outputs, 1)
-                    d_total += len(emb_ids[1])
+                    d_total += len(emb_ids)
                     if opt.loss.lower() == 'l2':
                         _, tgt_indices = torch.max(d_targets, 1)
                         d_correct += (pred == tgt_indices).sum().item()
@@ -484,17 +484,17 @@ def train(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters,
                 _, shared_feat = F_s(input_ids, input_mask, segment_ids)
                 d_outputs = D(shared_feat)
                 if opt.loss.lower() == 'gr':
-                    d_targets = utils.get_domain_label(opt.loss, domain, len(d_inputs[1]))
+                    d_targets = utils.get_domain_label(opt.loss, domain, len(d_inputs))
                     l_d = functional.nll_loss(d_outputs, d_targets)
                     if opt.lambd > 0:
                         l_d *= -opt.lambd
                 elif opt.loss.lower() == 'bs':
-                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs[1]))
+                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs))
                     l_d = functional.kl_div(d_outputs, d_targets, size_average=False)
                     if opt.lambd > 0:
                         l_d *= opt.lambd
                 elif opt.loss.lower() == 'l2':
-                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs[1]))
+                    d_targets = utils.get_random_domain_label(opt.loss, len(d_inputs))
                     l_d = functional.mse_loss(d_outputs, d_targets)
                     if opt.lambd > 0:
                         l_d *= opt.lambd

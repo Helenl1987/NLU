@@ -324,7 +324,6 @@ def evaluate(name, loader, F_s, F_d, C):
         emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
         inputs = emb_ids
         targets = label_ids
-        targets = targets.to(opt.device)
         if not F_d:
             # unlabeled domain
             d_features = torch.zeros(len(targets), opt.domain_hidden_size).to(opt.device)

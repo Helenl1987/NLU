@@ -14,11 +14,11 @@ class AveragingLayer(nn.Module):
         input: (data, lengths): (IntTensor(batch_size, max_sent_len), IntTensor(batch_size))
         """
         data = input
-        lengths = torch.tensor([opt.max_seq_len]*opt.batch_size).to(opt.device)
         data = autograd.Variable(data)
-        lengths = autograd.Variable(lengths)
         embeds = self.word_emb(data)
         X = embeds.sum(1).squeeze(1)
+        lengths = torch.tensor([opt.max_seq_len]*len(X)).to(opt.device)
+        lengths = autograd.Variable(lengths)
         lengths = lengths.view(-1, 1).expand_as(X)
         return torch.div(X, lengths.float())
 
