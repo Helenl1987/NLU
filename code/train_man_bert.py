@@ -58,33 +58,6 @@ def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlab
         lr=opt.learning_rate)
     optimizerD = optim.Adam(D.parameters(), lr=opt.D_learning_rate)
 
-    # testing
-    if opt.test_only:
-        log.info('Loading model from {}...'.format(opt.model_save_file))
-        # if F_s:
-        # F_s.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-        # 'netF_s.pth')))]
-        C.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                                                  'netC.pth')))
-        D.load_state_dict(torch.load(os.path.join(opt.model_save_file,
-                                                  'netD.pth')))
-
-        log.info('Evaluating validation sets:')
-        acc = {}
-        for domain in opt.all_domains:
-            acc[domain] = evaluate(domain, dev_loaders[domain],
-                                   F_s, None, C)
-        avg_acc = sum([acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info('Average validation accuracy: {}'.format(avg_acc))
-        log.info('Evaluating test sets:')
-        test_acc = {}
-        for domain in opt.all_domains:
-            test_acc[domain] = evaluate(domain, test_loaders[domain],
-                                        F_s, None, C)
-        avg_test_acc = sum([test_acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
-        log.info('Average test accuracy: {}'.format(avg_test_acc))
-        return {'valid': acc, 'test': test_acc}
-
     # training
     best_acc, best_avg_acc = defaultdict(float), 0.0
     for epoch in range(opt.max_epoch):
@@ -232,7 +205,7 @@ def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlab
     return best_acc
 
 
-def train_shared(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders):
+def train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders):
     F_s = BertModel('bert-base-multilingual-cased')
     C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
                             opt.shared_hidden_size + opt.domain_hidden_size, opt.num_labels,
@@ -631,7 +604,7 @@ def main():
 
 
 
-    cv = train(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders)
+    cv = train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders)
     log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
     log.info('Validation Set Domain Average\t{}'.format(acc))
