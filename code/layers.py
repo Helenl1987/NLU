@@ -1,7 +1,7 @@
 import torch
 from torch import autograd, nn
 import torch.nn.functional as functional
-import options as opt
+from options import opt
 import utils
 
 class AveragingLayer(nn.Module):
