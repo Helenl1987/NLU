@@ -19,7 +19,7 @@ class Vocab:
         flag = True
         for lan_idx, language in enumerate(self.language_list):
             txt_file = txt_dir + 'wiki.multi.' + language + '.vec'
-            with open(txt_file, 'r') as inf:
+            with open(txt_file, 'r', encoding='utf-8') as inf:
                 parts = inf.readline().split()
                 assert len(parts) == 2
                 if flag:
