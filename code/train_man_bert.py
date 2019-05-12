@@ -286,7 +286,7 @@ def train_shared(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled
             with open(os.path.join(opt.model_save_file, 'options.pkl'), 'wb') as ouf:
                 pickle.dump(opt, ouf)
             # torch.save(C.state_dict(),
-                       '{}/netC.pth'.format(opt.model_save_file))
+            #            '{}/netC.pth'.format(opt.model_save_file))
 
     # end of training
     log.info('Best average validation accuracy: {}'.format(best_avg_acc))
