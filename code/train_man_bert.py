@@ -41,8 +41,8 @@ log.addHandler(fh)
 # output options
 log.info(opt)
 
-def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders):
-    F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
+def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s):
+    # F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
     C, D = None, None
 
     C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
@@ -195,17 +195,17 @@ def train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlab
                 #if d in F_d:
                     #torch.save(F_d[d].state_dict(),
                                #'{}/net_F_d_{}.pth'.format(opt.model_save_file, d))
-            torch.save(C.state_dict(),
-                       '{}/netC.pth'.format(opt.model_save_file))
-            torch.save(D.state_dict(),
-                       '{}/netD.pth'.format(opt.model_save_file))
+            # torch.save(C.state_dict(),
+            #            '{}/netC.pth'.format(opt.model_save_file))
+            # torch.save(D.state_dict(),
+            #            '{}/netD.pth'.format(opt.model_save_file))
 
     # end of training
     log.info('Best average validation accuracy: {}'.format(best_avg_acc))
     return best_acc
 
 
-def train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders, F_s):
+def train_shared(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s):
 
     C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
                             opt.shared_hidden_size + opt.domain_hidden_size, opt.num_labels,
@@ -285,7 +285,7 @@ def train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders, F
             best_avg_acc = avg_acc
             with open(os.path.join(opt.model_save_file, 'options.pkl'), 'wb') as ouf:
                 pickle.dump(opt, ouf)
-            torch.save(C.state_dict(),
+            # torch.save(C.state_dict(),
                        '{}/netC.pth'.format(opt.model_save_file))
 
     # end of training
@@ -293,13 +293,125 @@ def train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders, F
     return best_acc
 
 
-def train(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders):
-    """
-    train_sets, dev_sets, test_sets: dict[domain] -> AmazonDataset
-    For unlabeled domains, no train_sets are available
-    """
+def train_private(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s):
     # models
-    F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
+    F_d = {}
+    C = None
+    if opt.model.lower() == 'dan':
+        for domain in opt.domains:
+            F_d[domain] = DanFeatureExtractor(vocab, opt.F_layers, opt.domain_hidden_size,
+                                              opt.sum_pooling, opt.dropout, opt.F_bn)
+    elif opt.model.lower() == 'lstm':
+        for domain in opt.domains:
+            F_d[domain] = LSTMFeatureExtractor(vocab, opt.F_layers, opt.domain_hidden_size,
+                                               opt.dropout, opt.bdrnn, opt.attn)
+    elif opt.model.lower() == 'cnn':
+        for domain in opt.domains:
+            F_d[domain] = CNNFeatureExtractor(vocab, opt.F_layers, opt.domain_hidden_size,
+                                              opt.kernel_num, opt.kernel_sizes, opt.dropout)
+    else:
+        raise Exception('Unknown model architecture {}'.format(opt.model))
+
+    C = SentimentClassifier(opt.C_layers, opt.shared_hidden_size + opt.domain_hidden_size,
+                            opt.shared_hidden_size + opt.domain_hidden_size, opt.num_labels,
+                            opt.dropout, opt.C_bn)
+
+    C = C.to(opt.device)
+    for f_d in F_d.values():
+        f_d = f_d.to(opt.device)
+    # optimizers
+    optimizer = optim.Adam(itertools.chain(
+        *map(list, [[], C.parameters()] + [f.parameters() for f in F_d.values()])),
+                           lr=opt.learning_rate)
+
+
+    # training
+    best_acc, best_avg_acc = defaultdict(float), 0.0
+    for epoch in range(opt.max_epoch):
+        C.train()
+        for f in F_d.values():
+            f.train()
+
+        # training accuracy
+        correct, total = defaultdict(int), defaultdict(int)
+        # D accuracy
+        d_correct, d_total = 0, 0
+        # conceptually view 1 epoch as 1 epoch of the first domain
+        num_iter = len(train_loaders[opt.domains[0]])
+        for i in tqdm(range(num_iter)):
+
+            # F&C iteration
+            map(utils.unfreeze_net, F_d.values())
+            utils.unfreeze_net(C)
+            # if opt.fix_emb:
+            #     for f_d in F_d.values():
+            #         utils.freeze_net(f_d.word_emb)
+            for f_d in F_d.values():
+                f_d.zero_grad()
+            C.zero_grad()
+            for domain in opt.domains:
+                batch = utils.endless_get_next_batch(
+                    train_loaders, train_iters, domain)
+                batch = tuple(t.to(opt.device) for t in batch)
+                emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
+                inputs = emb_ids
+                targets = label_ids
+                shared_feat = torch.zeros(len(targets), opt.shared_hidden_size).to(opt.device)
+                domain_feat = F_d[domain](inputs)
+                features = torch.cat((shared_feat, domain_feat), dim=1)
+                c_outputs = C(features)
+                l_c = functional.nll_loss(c_outputs, targets)
+                l_c.backward(retain_graph=True)
+                _, pred = torch.max(c_outputs, 1)
+                total[domain] += targets.size(0)
+                correct[domain] += (pred == targets).sum().item()
+
+            optimizer.step()
+
+        # end of epoch
+        log.info('Ending epoch {}'.format(epoch + 1))
+        if d_total > 0:
+            log.info('D Training Accuracy: {}%'.format(100.0 * d_correct / d_total))
+        log.info('Training accuracy:')
+        log.info('\t'.join(opt.domains))
+        log.info('\t'.join([str(100.0 * correct[d] / total[d]) for d in opt.domains]))
+        log.info('Evaluating validation sets:')
+        acc = {}
+        for domain in opt.dev_domains:
+            acc[domain] = evaluate(domain, dev_loaders[domain],
+                                   None, F_d[domain] if domain in F_d else None, C)
+        avg_acc = sum([acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
+        log.info('Average validation accuracy: {}'.format(avg_acc))
+        log.info('Evaluating test sets:')
+        test_acc = {}
+        for domain in opt.dev_domains:
+            test_acc[domain] = evaluate(domain, test_loaders[domain],
+                                        None, F_d[domain] if domain in F_d else None, C)
+        avg_test_acc = sum([test_acc[d] for d in opt.dev_domains]) / len(opt.dev_domains)
+        log.info('Average test accuracy: {}'.format(avg_test_acc))
+
+        if avg_acc > best_avg_acc:
+            log.info('New best average validation accuracy: {}'.format(avg_acc))
+            best_acc['valid'] = acc
+            best_acc['test'] = test_acc
+            best_avg_acc = avg_acc
+            with open(os.path.join(opt.model_save_file, 'options.pkl'), 'wb') as ouf:
+                pickle.dump(opt, ouf)
+            # for d in opt.domains:
+            #     if d in F_d:
+            #         torch.save(F_d[d].state_dict(),
+            #                    '{}/net_F_d_{}.pth'.format(opt.model_save_file, d))
+            # torch.save(C.state_dict(),
+            #            '{}/netC.pth'.format(opt.model_save_file))
+
+    # end of training
+    log.info('Best average validation accuracy: {}'.format(best_avg_acc))
+    return best_acc
+
+
+def train(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s):
+    # models
+    # F_s = BertModel.from_pretrained('bert-base-multilingual-cased')
     F_d = {}
     C, D = None, None
     if opt.model.lower() == 'dan':
@@ -504,16 +616,16 @@ def train(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters,
             best_avg_acc = avg_acc
             with open(os.path.join(opt.model_save_file, 'options.pkl'), 'wb') as ouf:
                 pickle.dump(opt, ouf)
-            torch.save(F_s.state_dict(),
-                       '{}/netF_s.pth'.format(opt.model_save_file))
-            for d in opt.domains:
-                if d in F_d:
-                    torch.save(F_d[d].state_dict(),
-                               '{}/net_F_d_{}.pth'.format(opt.model_save_file, d))
-            torch.save(C.state_dict(),
-                       '{}/netC.pth'.format(opt.model_save_file))
-            torch.save(D.state_dict(),
-                       '{}/netD.pth'.format(opt.model_save_file))
+            # torch.save(F_s.state_dict(),
+            #            '{}/netF_s.pth'.format(opt.model_save_file))
+            # for d in opt.domains:
+            #     if d in F_d:
+            #         torch.save(F_d[d].state_dict(),
+            #                    '{}/net_F_d_{}.pth'.format(opt.model_save_file, d))
+            # torch.save(C.state_dict(),
+            #            '{}/netC.pth'.format(opt.model_save_file))
+            # torch.save(D.state_dict(),
+            #            '{}/netD.pth'.format(opt.model_save_file))
 
     # end of training
     log.info('Best average validation accuracy: {}'.format(best_avg_acc))
@@ -557,8 +669,8 @@ def main():
     if not os.path.exists(opt.model_save_file):
         os.makedirs(opt.model_save_file)
     vocab = Vocab(opt.emb_filename)
-    log.info('Loadin pretrained bert model...') 
-    F_s = BertModel.from_pretrained('bert-base-multilingual-cased', cache_dir='/scratch/zl2521/pretrained-bert-cache')
+    log.info('Loading pretrained bert model...') 
+    F_s = BertModel.from_pretrained('bert-base-multilingual-cased', cache_dir='/scratch/jl10005/pretrained-bert-cache')
     log.info('Loading {} Datasets...'.format(opt.dataset))
     log.info('Domains: {}'.format(opt.domains))
 
@@ -605,7 +717,32 @@ def main():
         unlabeled_loaders[domain] = DataLoader(uset, sampler=uset_sampler, batch_size=opt.batch_size)
         unlabeled_iters[domain] = iter(unlabeled_loaders[domain])
 
-    cv = train_shared(vocab, train_loaders, train_iters, dev_loaders, test_loaders, F_s)
+    log.info('Starting training shared_bert')
+    cv = train_shared(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s)
+    log.info('Training done...')
+    acc = sum(cv['valid'].values()) / len(cv['valid'])
+    log.info('Validation Set Domain Average\t{}'.format(acc))
+    test_acc = sum(cv['test'].values()) / len(cv['test'])
+    log.info('Test Set Domain Average\t{}'.format(test_acc))
+
+    log.info('Starting training shared_man_bert')
+    cv = train_shared_man(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s)
+    log.info('Training done...')
+    acc = sum(cv['valid'].values()) / len(cv['valid'])
+    log.info('Validation Set Domain Average\t{}'.format(acc))
+    test_acc = sum(cv['test'].values()) / len(cv['test'])
+    log.info('Test Set Domain Average\t{}'.format(test_acc))
+
+    log.info('Starting training private')
+    cv = train_private(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s)
+    log.info('Training done...')
+    acc = sum(cv['valid'].values()) / len(cv['valid'])
+    log.info('Validation Set Domain Average\t{}'.format(acc))
+    test_acc = sum(cv['test'].values()) / len(cv['test'])
+    log.info('Test Set Domain Average\t{}'.format(test_acc))
+
+    log.info('Starting training shared_private_man_bert')
+    cv = train(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s)
     log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
     log.info('Validation Set Domain Average\t{}'.format(acc))
