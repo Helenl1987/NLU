@@ -657,6 +657,8 @@ def train_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled
     return best_acc
 
 
+
+
 def evaluate(name, loader, F_s, F_d, C):
     F_s.eval()
     if F_d:
@@ -671,23 +673,22 @@ def evaluate(name, loader, F_s, F_d, C):
         emb_ids, input_ids, input_mask, segment_ids, label_ids = batch
         inputs = emb_ids
         targets = label_ids
-        targets = targets.to(opt.device)
         if not F_d:
             # unlabeled domain
             d_features = torch.zeros(len(targets), opt.domain_hidden_size).to(opt.device)
         else:
             d_features = F_d(inputs)
-        _, shared_feat = F_s(input_ids, input_mask, segment_ids)
-        features = torch.cat((shared_feat, d_features), dim=1)
+        features = torch.cat((F_s(inputs), d_features), dim=1)
         outputs = C(features)
         _, pred = torch.max(outputs, 1)
         confusion.add(pred.data, targets.data)
         total += targets.size(0)
         correct += (pred == targets).sum().item()
     acc = correct / total
-    log.info('{}: Accuracy on {} samples: {}%'.format(name, total, 100.0 * acc))
+    log.info('{}: Accuracy on {} samples: {}%'.format(name, total, 100.0*acc))
     log.debug(confusion.conf)
     return acc
+
 
 
 def main():
