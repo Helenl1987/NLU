@@ -660,7 +660,8 @@ def train_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled
 
 
 def evaluate(name, loader, F_s, F_d, C):
-    F_s.eval()
+    if F_s:
+        F_s.eval()
     if F_d:
         F_d.eval()
     C.eval()
@@ -678,7 +679,11 @@ def evaluate(name, loader, F_s, F_d, C):
             d_features = torch.zeros(len(targets), opt.domain_hidden_size).to(opt.device)
         else:
             d_features = F_d(inputs)
-        features = torch.cat((F_s(inputs), d_features), dim=1)
+        if not F_s:
+            s_features = torch.zeros(len(targets), opt.shared_hidden_size).to(opt.device)
+        else:
+            s_features = F_s(inputs)
+        features = torch.cat((s_features, d_features), dim=1)
         outputs = C(features)
         _, pred = torch.max(outputs, 1)
         confusion.add(pred.data, targets.data)
