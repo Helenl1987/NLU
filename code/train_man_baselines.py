@@ -741,7 +741,7 @@ def main():
         unlabeled_iters[domain] = iter(unlabeled_loaders[domain])
 
     log.info('Starting training shared_nobert')
-    cv = train_shared_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s)
+    cv = train_shared_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders)
     log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
     log.info('Validation Set Domain Average\t{}'.format(acc))
@@ -749,7 +749,7 @@ def main():
     log.info('Test Set Domain Average\t{}'.format(test_acc))
 
     log.info('Starting training shared_man_nobert')
-    cv = train_shared_man_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s)
+    cv = train_shared_man_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders)
     log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
     log.info('Validation Set Domain Average\t{}'.format(acc))
@@ -757,7 +757,7 @@ def main():
     log.info('Test Set Domain Average\t{}'.format(test_acc))
 
     log.info('Starting training private_nobert')
-    cv = train_private_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s)
+    cv = train_private_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders)
     log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
     log.info('Validation Set Domain Average\t{}'.format(acc))
@@ -765,7 +765,7 @@ def main():
     log.info('Test Set Domain Average\t{}'.format(test_acc))
 
     log.info('Starting training shared_private_man_nobert')
-    cv = train_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders, F_s)
+    cv = train_nobert(vocab, train_loaders, unlabeled_loaders, train_iters, unlabeled_iters, dev_loaders, test_loaders)
     log.info('Training done...')
     acc = sum(cv['valid'].values()) / len(cv['valid'])
     log.info('Validation Set Domain Average\t{}'.format(acc))
