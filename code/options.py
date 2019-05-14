@@ -10,6 +10,11 @@ parser.add_argument('--prep_amazon_file', default='../data/prep-amazon/amazon.pk
 parser.add_argument('--fdu_mtl_dir', default='../data/fdu-mtl/')
 parser.add_argument('--amazon_lang_dir', default='../data/amazon-lang')
 
+parser.add_argument('--shared', action='store_true', default=False);
+parser.add_argument('--shared_man', action='store_true', default=False);
+parser.add_argument('--private', action='store_true', default=False);
+parser.add_argument('--shared_private_man', action='store_true', default=False);
+
 # pre-shuffle for cross validation data split
 parser.add_argument('--use_preshuffle/', dest='use_preshuffle', action='store_true', default=True)
 parser.add_argument('--amazon_preshuffle_file', default='../data/prep-amazon/amazon-shuffle-indices.pkl')
