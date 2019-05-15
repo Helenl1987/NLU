@@ -15,7 +15,7 @@ module load python3/intel/3.6.3
 source ~/pyenv/py3.6.3/bin/activate
 
 #python train_man_exp3.py --dataset amazon-lang --model lstm --max_epoch 20
-# python train_man_bert.py --dataset amazon-lang --model dan --max_epoch 14 --model_save_file ./save/train_bert_shared --topic_domain all --domains de en fr --no_wgan_trick --sum_pooling --shared_hidden_size 768 --shared
-# python train_man_bert.py --dataset amazon-lang --model dan --max_epoch 14 --model_save_file ./save/train_bert_shared_man --topic_domain all --domains de en fr --no_wgan_trick --sum_pooling --shared_hidden_size 768 --shared_man
-# python train_man_bert.py --dataset amazon-lang --model dan --max_epoch 14 --model_save_file ./save/train_bert_private --topic_domain all --domains de en fr --no_wgan_trick --sum_pooling --shared_hidden_size 768 --private
+# python train_man_bert.py --dataset amazon-lang --model dan --max_epoch 14 --model_save_file ./save/train_bert_shared --topic_domain all --domains de en fr --no_wgan_trick --sum_pooling --shared_hidden_size 768 --shared --batch_size 16
+# python train_man_bert.py --dataset amazon-lang --model dan --max_epoch 14 --model_save_file ./save/train_bert_shared_man --topic_domain all --domains de en fr --no_wgan_trick --sum_pooling --shared_hidden_size 768 --shared_man --batch_size 16
+# python train_man_bert.py --dataset amazon-lang --model dan --max_epoch 14 --model_save_file ./save/train_bert_private --topic_domain all --domains de en fr --no_wgan_trick --sum_pooling --shared_hidden_size 768 --private --batch_size 16
 python train_man_bert.py --dataset amazon-lang --model dan --max_epoch 14 --model_save_file ./save/train_bert_shared_private_man --topic_domain all --domains de en fr --no_wgan_trick --sum_pooling --shared_hidden_size 768 --shared_private_man --batch_size 16
